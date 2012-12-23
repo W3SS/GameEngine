@@ -34,9 +34,11 @@ class GameEngine{
     ports['playCard'] = _playCardReceivePort.toSendPort();
     _bidReceivePort = new ReceivePort();
     ports['bid'] = _bidReceivePort.toSendPort();
+    //define the default behavior when a bid is made when it is not a bidding round
     notBiddingRound = (msg, _) {
       print('not accepting bids at this time');
     };
+    //set the default behavior when receiving a bid
     _bidReceivePort.receive(notBiddingRound);
     
     selectCardGame()
@@ -59,13 +61,26 @@ class GameEngine{
 //  deal cards
     print('dealing cards');
     //have a round of bidding
-    Future biddingRoundResults = biddingRound(game);
+    game['northSouthScore'] = 0;
+    game['eastWestScore'] = 0;
+    Future playRoundResults = biddingRound(game);
     //followed by playing a round, repeating until game is over
-    biddingRoundResults.chain((value) => playRound(value))
-    .then((value){
-      c.complete(value);
-    });
+    playRoundsUntilWinner(playRoundResults, c, game);
     return c.future;
+  }
+
+  void playRoundsUntilWinner(Future playRoundResults, Completer c, Map game) {
+     playRoundResults.chain((value) => playRound(value))
+      .then((value){
+        //print('in then clause');
+        if(value['northSouthScore'] >= 500 || value['eastWestScore'] >= 500){
+          print(value['northSouthScore'] );
+          c.complete(game);
+        }else {
+          //recursively call playRound, using chain for maintaining order
+          playRoundsUntilWinner(playRoundResults, c, game);
+        }
+      });
   }
 
   Future bidCards(game) {
@@ -95,7 +110,6 @@ class GameEngine{
         }
       }
       else{
-        //game['bids'][msg['from']] = msg['bid'];
         print('not a valid bid!');
       }
     } );
@@ -113,27 +127,12 @@ class GameEngine{
 
   Future<Map> biddingRound(game) {
     print('waiting for bids...');
+    //start with the dealer position
     game['bidderPosition'] = game['dealer'];
+    //dealer always deals to their left
     advanceBidder(game);
     game['bids'] = {};
-    Future result;// = new Future.immediate(game);
-    //game['cards'] = [];
-//    Map currentGame;
-    //for(int i = 0 ; i < 4 ; i++){
-//    while(game['winningBid'] == null){
-//      print('in while loop...');
-      result = bidCards(game);
-//      if(currentGame['winningBid'] != null){
-//        //_bidReceivePort.receive((msg, _) {
-//          print('bidding round complete!');
-//        //} );
-//
-//        break;
-//      }
-    //}
-    //_bidReceivePort.close();
-      
-    return result;
+    return bidCards(game);
   }
   String selectDealer() {
     String result = 'south';//default
@@ -144,11 +143,12 @@ class GameEngine{
   }
 
   Future<Map> playRound(game) {
+    game['northSouthScore'] = game['northSouthScore'] + 200;
     Future result = new Future.immediate(game);
     game['cards'] = [];
     for(int i = 0 ; i < 9 ; i++){
       result = result.chain((value) => playHand(value));
-    }
+    }    
     return result;
   }
 
@@ -160,18 +160,12 @@ class GameEngine{
     return result;
   }
   Future<Map> playCard(game){
-    //print('waiting for card to be played...');
-    //Future result = new Future.immediate(game);
-    //game['cards'].add('a card');
-//    String currentPositionToPlay = game['dealer'];
     Completer c = new Completer();
-    //_playCardReceivePort = new ReceivePort();
     _playCardReceivePort.receive((msg, _) {
       game['cards'].add(msg['name']);
       c.complete(game);
     } );
     return c.future;
-//  return result;
   }
   Future<Map> selectStartGame(Map game){
     print('waiting for card game to be started...');

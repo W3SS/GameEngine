@@ -21,5 +21,15 @@ void main(){
     cards[i].flip();
     ge.ports['playCard'].send({'name':(cards[i].toString())},null);
   }
+  for(int i = 0; i < cards.length; i++){
+    //print(cards[i].toString());
+    cards[i].flip();
+    ge.ports['playCard'].send({'name':(cards[i].toString())},null);
+  }
+  for(int i = 0; i < cards.length; i++){
+    //print(cards[i].toString());
+    cards[i].flip();
+    ge.ports['playCard'].send({'name':(cards[i].toString())},null);
+  }
   //ge.ports['playCard'].send({'name':'unknown'}, null);
 }
