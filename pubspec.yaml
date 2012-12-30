@@ -1,5 +1,5 @@
-name:  GameEngine
-description:  A sample application
+name:  card_game
+description:  A card game application
 
 #dependencies:
 #  js: any
