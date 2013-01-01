@@ -7,8 +7,8 @@ String currentPlayer;
 String firstToPlay;
 String firstToBid;
 void main(){
-  var env = Platform.environment;
-  print(Platform.runtimeType);
+  //var env = Platform.environment;
+  //print(Platform.runtimeType);
   //env.forEach((k, v) => print("Key=$k Value=$v"));
   print('testing game engine...');
   gameEngine.initialize();
