@@ -6,6 +6,7 @@ part 'card.dart';
 part 'suit.dart';
 part 'rank.dart';
 
+List positions = ['north', 'east', 'south', 'west'];
 
 List createDeck() {
   List<Card> result = new List<Card>();
