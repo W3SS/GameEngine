@@ -7,7 +7,9 @@ import 'package:card_game/card_utils.dart';
 
 SendPort _gamePort;
 GameEngineService ges;
-Completer _completer;
+ReceivePort gameServer;
+
+//Completer _completer;
 
 Future<String> send(String message) {
   _gamePort.send(message);
@@ -18,8 +20,10 @@ void register(Service targetService){
 }
 
 void initialize(){
-  ges = new GameEngineService();
-  ges.init;
+  gameServer = new ReceivePort();
+  
+//  ges = new GameEngineService();
+//  ges.init;
 }
 
 Service get service{
@@ -219,7 +223,7 @@ class GameEngineService implements Service{
   end(Map gameMap) {
     _port.close();
 //    _registerReceivePort.close();
-    ports['presentation'].send({'close':'true'}, null);
+    //ports['presentation'].send({'close':'true'}, null);
     print(gameMap);
   }
 
@@ -230,10 +234,13 @@ class SelectCardGameHandler{
   //Function receive;
   SelectCardGameHandler(this._completer, this._gameMap);
   
-  receive(message,SendPort _){
-    print('in _selectCardGameReceiver...');
+  receive(msg,SendPort _){
+    Map message = JSON.parse(msg);
+    Map messageMap = JSON.parse(message['message']);
+
+    print('in _selectCardGameReceiver...port is ${_}');
     
-    _gameMap['gameName'] = message['gameName'];
+    _gameMap['gameName'] = messageMap['gameName'];
     _completer.complete(_gameMap);
     
   }
@@ -246,15 +253,18 @@ class BidCardsHandler{
   //Function receive;
   BidCardsHandler(this._completer, this._gameMap);
   
-  receive(msg, _) {
+  receive(message, _) {
+    Map msg = JSON.parse(message);
+    print(msg);
     String nextToBidName = _gameMap['bidderPosition'];
     print('bidding cards...next  to bid is ${nextToBidName}');
-    String bidFrom = msg['from'];
-    String bid = msg['bid'];
+    Map messageMap = JSON.parse(msg['message']);
+    String bidFrom = messageMap['from'];
+    String bid = messageMap['bid'];
     if(bidFrom == nextToBidName && bid != null){
       if(acceptableBids.contains(bid)){
         print('bid from ${bidFrom} of ${bid}');
-        _gameMap['bids'][bidFrom] = msg['bid'];
+        _gameMap['bids'][bidFrom] = bid;
         if( bid != 'pass'){
           _gameMap['winningBid'] = bid;
           _gameMap['winningBidder'] = bidFrom;
@@ -282,8 +292,10 @@ class SelectNumberOfPlayersHandler{
   //Function receive;
   SelectNumberOfPlayersHandler(this._completer, this._gameMap);
   
-  receive(message, _){
-    _gameMap['numberOfPlayers'] = message['numberOfPlayers'];//todo - hardcoded - change to message info
+  receive(msg, _){
+    Map message = JSON.parse(msg);
+    Map messageMap = JSON.parse(message['message']);
+    _gameMap['numberOfPlayers'] = messageMap['numberOfPlayers'];//todo - hardcoded - change to message info
     _completer.complete(_gameMap);
   }
 
@@ -294,9 +306,11 @@ class SelectStartGameHandler{
   //Function receive;
   SelectStartGameHandler(this._completer, this._gameMap);
   
-  receive(message, _){
-    print(message['status']);
-    _gameMap['status'] = message['status'];
+  receive(msg, _){
+    Map message = JSON.parse(msg);
+    Map messageMap = JSON.parse(message['message']);
+    print(messageMap['status']);
+    _gameMap['status'] = messageMap['status'];
     _completer.complete(_gameMap);
   }
 
@@ -309,7 +323,10 @@ class PlayCardHandler{
   PlayCardHandler(this._completer, this._gameMap);
   
   receive(msg, _) {
-    _gameMap['rounds'][_gameMap['currentRound']]['cards'].add('${msg['name']} from ${msg['player']}');
+    Map message = JSON.parse(msg);
+    Map messageMap = JSON.parse(message['message']);
+
+    _gameMap['rounds'][_gameMap['currentRound']]['cards'].add('${messageMap['name']} from ${messageMap['player']}');
     _completer.complete(_gameMap);
   }
 
@@ -327,3 +344,16 @@ class DefaultHandler{
 
 }
 
+class GamesServerDefaultHandler{
+  GameEngineService currentGameEngineService;
+  Set<GameEngineService> games;
+  GamesServerDefaultHandler(){
+    games = new Set<GameEngineService>();
+  }
+  receive(message, _){
+    currentGameEngineService = new GameEngineService();
+    currentGameEngineService.init();
+    //add incoming sendport _ to currentGameEngineService as owner of game 
+    games.add(currentGameEngineService);
+  }
+}

@@ -1,53 +1,60 @@
 import 'package:card_game/game_engine_service.dart' as gameEngine;
 import 'package:card_game/card_utils.dart' as cards;
 import 'package:card_game/view.dart' as presenter;
+import 'package:card_game/game_connection.dart';
 import 'dart:isolate';
 import 'dart:io';
+import 'dart:json';
 String currentPlayer;
 String firstToPlay;
 String firstToBid;
+ReceivePort _applicationPort;
 void main(){
+  _applicationPort = new ReceivePort();
   //var env = Platform.environment;
   //print(Platform.runtimeType);
   //env.forEach((k, v) => print("Key=$k Value=$v"));
   print('testing game engine...');
   gameEngine.initialize();
-  presenter.initialize();
-  gameEngine.register(presenter.service);
-  presenter.register(gameEngine.service);
+  GameConnection gameConnection = new LocalGameConnection(gameEngine.service.port);
+  //gameConnection.send('humanPlayer','registering player', type:'register');
+  //gameConnection.
+  //presenter.initialize();
+  //gameEngine.register(presenter.service);
+  //presenter.register(gameEngine.service);
   List cardDeck = cards.createDeck();
-  presenter.ports['gameEngine'].send({'gameName':'Tarabish'});
-  presenter.ports['gameEngine'].send({'numberOfPlayers':'4'});
-  presenter.ports['gameEngine'].send({'status':'game started'});
-  presenter.ports['gameEngine'].send({'bid':'pass','from':'north'});
-  presenter.ports['gameEngine'].send({'bid':'pass','from':'east'});
-  presenter.ports['gameEngine'].send({'bid':'pass','from':'south'});
-  presenter.ports['gameEngine'].send({'bid':'pass','from':'west'});
-  presenter.ports['gameEngine'].send({'bid':'pass','from':'north'});
-  presenter.ports['gameEngine'].send({'bid':'pass','from':'east'});
-  presenter.ports['gameEngine'].send({'bid':'pass','from':'south'});
-  presenter.ports['gameEngine'].send({'bid':'pass','from':'west'});
-  presenter.ports['gameEngine'].send({'bid':'hearts','from':'north'});
-  presenter.ports['gameEngine'].send({'bid':'hearts','from':'east'});
-  presenter.ports['gameEngine'].send({'bid':'hearts','from':'south'});
-  presenter.ports['gameEngine'].send({'bid':'hearts','from':'west'});
+  gameConnection.send('humanPlayer',JSON.stringify({'gameName':'Tarabish'}));
+  gameConnection.send('humanPlayer',JSON.stringify({'numberOfPlayers':'4'}));
+  gameConnection.send('humanPlayer',JSON.stringify({'status':'game started'}));
+  gameConnection.send('humanPlayer',JSON.stringify({'bid':'pass','from':'north'}));
+  gameConnection.send('humanPlayer',JSON.stringify({'bid':'pass','from':'east'}));
+  gameConnection.send('humanPlayer',JSON.stringify({'bid':'pass','from':'south'}));
+  gameConnection.send('humanPlayer',JSON.stringify({'bid':'pass','from':'west'}));
+  gameConnection.send('humanPlayer',JSON.stringify({'bid':'pass','from':'north'}));
+  gameConnection.send('humanPlayer',JSON.stringify({'bid':'pass','from':'east'}));
+  gameConnection.send('humanPlayer',JSON.stringify({'bid':'pass','from':'south'}));
+  gameConnection.send('humanPlayer',JSON.stringify({'bid':'pass','from':'west'}));
+  gameConnection.send('humanPlayer',JSON.stringify({'bid':'hearts','from':'north'}));
+  gameConnection.send('humanPlayer',JSON.stringify({'bid':'hearts','from':'east'}));
+  gameConnection.send('humanPlayer',JSON.stringify({'bid':'hearts','from':'south'}));
+  gameConnection.send('humanPlayer',JSON.stringify({'bid':'hearts','from':'west'}));
 
   print(cardDeck.length);
   cardDeck = cards.shuffle(cardDeck);
   currentPlayer = firstToPlay;
   for(int i = 0; i < cardDeck.length; i++){
     cardDeck[i].flip();
-    presenter.ports['gameEngine'].send({'name':(cardDeck[i].toString()), 'player':currentPlayer},null);
+    gameConnection.send('humanPlayer',JSON.stringify({'name':(cardDeck[i].toString()), 'player':currentPlayer}));
     advanceCurrentPlayer(currentPlayer);
   }
   cardDeck = cards.shuffle(cardDeck);
   for(int i = 0; i < cardDeck.length; i++){
-    presenter.ports['gameEngine'].send({'name':(cardDeck[i].toString()), 'player':currentPlayer},null);
+    gameConnection.send('humanPlayer',JSON.stringify({'name':(cardDeck[i].toString()), 'player':currentPlayer}));
     advanceCurrentPlayer(currentPlayer);
   }
   cardDeck = cards.shuffle(cardDeck);
   for(int i = 0; i < cardDeck.length; i++){
-    presenter.ports['gameEngine'].send({'name':(cardDeck[i].toString()), 'player':currentPlayer},null);
+    gameConnection.send('humanPlayer',JSON.stringify({'name':(cardDeck[i].toString()), 'player':currentPlayer}));
     advanceCurrentPlayer(currentPlayer);
   }
 }
